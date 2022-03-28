@@ -14,7 +14,7 @@ import (
 func SchemaBlockEmptyValue(b *tfjson.SchemaBlock) cty.Value {
 	vals := make(map[string]cty.Value)
 	for name, attrS := range b.Attributes {
-		vals[name] = SchemaAttributeType(attrS)
+		vals[name] = SchemaAttributeEmptyValue(attrS)
 	}
 	for name, blockS := range b.NestedBlocks {
 		vals[name] = SchemaBlockTypeEmptyValue(blockS)
@@ -22,10 +22,10 @@ func SchemaBlockEmptyValue(b *tfjson.SchemaBlock) cty.Value {
 	return cty.ObjectVal(vals)
 }
 
-// SchemaAttributeType returns the "empty value" for the receiving attribute, which is
+// SchemaAttributeEmptyValue returns the "empty value" for the receiving attribute, which is
 // the value that would be returned if there were no definition of the attribute
 // at all, ignoring any required constraint.
-func SchemaAttributeType(a *tfjson.SchemaAttribute) cty.Value {
+func SchemaAttributeEmptyValue(a *tfjson.SchemaAttribute) cty.Value {
 	if a.AttributeNestedType != nil {
 		return cty.NullVal(SchemaNestedAttributeTypeImpliedType(a.AttributeNestedType))
 	}

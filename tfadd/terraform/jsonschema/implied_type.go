@@ -4,7 +4,7 @@ package jsonschema
 // But instead of processing on the configschema.Block as the core does, here it processes the `tfjson.SchemaBlock`.
 
 import (
-	"github.com/hashicorp/hcl2/hcldec"
+	"github.com/hashicorp/hcl/v2/hcldec"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/zclconf/go-cty/cty"
 )

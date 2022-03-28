@@ -8,7 +8,7 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/hashicorp/hcl2/hcldec"
+	"github.com/hashicorp/hcl/v2/hcldec"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/zclconf/go-cty/cty"
 )
