@@ -1,18 +1,16 @@
-package main
+package tfstate_test
 
 import (
 	"context"
-	"fmt"
 	"log"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/hashicorp/hc-install/fs"
 	"github.com/hashicorp/hc-install/product"
 	"github.com/hashicorp/terraform-exec/tfexec"
-	"github.com/magodo/tfadd/tfadd/state"
+	"github.com/magodo/tfstate"
 )
 
-func main() {
+func ExampleFromJSONState() {
 	ctx := context.TODO()
 	av := fs.AnyVersion{
 		Product: &product.Terraform,
@@ -25,25 +23,17 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := add(ctx, tf); err != nil {
-		log.Fatal(err)
-	}
-}
-
-func add(ctx context.Context, tf *tfexec.Terraform) error {
 	schema, err := tf.ProvidersSchema(ctx)
 	if err != nil {
-		return fmt.Errorf("get provider schema: %v", err)
+		log.Fatalf("get provider schema: %v", err)
 	}
-	providerSchema := schema.Schemas["registry.terraform.io/hashicorp/azurerm"]
 	rawState, err := tf.Show(ctx)
 	if err != nil {
-		return fmt.Errorf("show state: %v", err)
+		log.Fatalf("show state: %v", err)
 	}
-	state, err := state.FromJSONState(rawState, providerSchema)
+	state, err := tfstate.FromJSONState(rawState, schema)
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
-	spew.Dump(state)
-	return nil
+	_ = state
 }
