@@ -2,6 +2,7 @@ package tfstate_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -198,5 +199,275 @@ func TestFromJSONStateResource(t *testing.T) {
 	require.Equal(t, ev.AttrMap, av.AttrMap)
 	require.Equal(t, ev.AttrTuple, av.AttrTuple)
 	require.Equal(t, ev.AttrObject, av.AttrObject)
+}
 
+func TestFromJSONState(t *testing.T) {
+	cases := []struct {
+		name    string
+		state   *tfjson.State
+		schemas *tfjson.ProviderSchemas
+		expect  *tfstate.State
+		err     error
+	}{
+		{
+			name: "Unsupported state version",
+			state: &tfjson.State{
+				FormatVersion: "3",
+				Values: &tfjson.StateValues{
+					RootModule: &tfjson.StateModule{},
+				},
+			},
+			err: fmt.Errorf("tfstate only supports state version 4. got=3"),
+		},
+		{
+			name: "No values",
+			state: &tfjson.State{
+				FormatVersion: "4",
+			},
+			expect: &tfstate.State{
+				TerraformVersion: "4",
+			},
+		},
+		{
+			name: "Empty values",
+			state: &tfjson.State{
+				FormatVersion: "4",
+				Values:        &tfjson.StateValues{},
+			},
+			expect: &tfstate.State{
+				TerraformVersion: "4",
+				Values:           &tfstate.StateValues{},
+			},
+		},
+		{
+			name: "Empty root module & output",
+			state: &tfjson.State{
+				FormatVersion: "4",
+				Values: &tfjson.StateValues{
+					RootModule: &tfjson.StateModule{},
+					Outputs:    map[string]*tfjson.StateOutput{},
+				},
+			},
+			expect: &tfstate.State{
+				TerraformVersion: "4",
+				Values: &tfstate.StateValues{
+					RootModule: &tfstate.StateModule{},
+					Outputs:    map[string]*tfstate.StateOutput{},
+				},
+			},
+		},
+		{
+			name: "One resource with outputs",
+			state: &tfjson.State{
+				FormatVersion: "4",
+				Values: &tfjson.StateValues{
+					RootModule: &tfjson.StateModule{
+						Address: "root",
+						Resources: []*tfjson.StateResource{
+							{
+								Address:      "demo_resource_foo.test",
+								Mode:         tfjson.ManagedResourceMode,
+								Type:         "demo_resource_foo",
+								Name:         "test",
+								Index:        1,
+								ProviderName: "registry.terraform.io/magodo/demo",
+								AttributeValues: map[string]interface{}{
+									"attr_str": "some string",
+								},
+								SensitiveValues: json.RawMessage{
+									1,
+									2,
+									3,
+								},
+								DependsOn: []string{
+									"dep",
+								},
+								Tainted:    true,
+								DeposedKey: "key",
+							},
+						},
+						ChildModules: []*tfjson.StateModule{},
+					},
+					Outputs: map[string]*tfjson.StateOutput{
+						"out": {
+							Sensitive: true,
+							Value:     1,
+						},
+					},
+				},
+			},
+			schemas: &tfjson.ProviderSchemas{
+				Schemas: map[string]*tfjson.ProviderSchema{
+					"registry.terraform.io/magodo/demo": {
+						ResourceSchemas: map[string]*tfjson.Schema{
+							"demo_resource_foo": {
+								Block: &tfjson.SchemaBlock{
+									Attributes: map[string]*tfjson.SchemaAttribute{
+										"attr_str": {
+											AttributeType: cty.String,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expect: &tfstate.State{
+				TerraformVersion: "4",
+				Values: &tfstate.StateValues{
+					RootModule: &tfstate.StateModule{
+						Address: "root",
+						Resources: []*tfstate.StateResource{
+							{
+								Address:      "demo_resource_foo.test",
+								Mode:         tfjson.ManagedResourceMode,
+								Type:         "demo_resource_foo",
+								Name:         "test",
+								Index:        1,
+								ProviderName: "registry.terraform.io/magodo/demo",
+								Value: cty.ObjectVal(map[string]cty.Value{
+									"attr_str": cty.StringVal("some string"),
+								}),
+								SensitiveValues: json.RawMessage{
+									1,
+									2,
+									3,
+								},
+								DependsOn: []string{
+									"dep",
+								},
+								Tainted:    true,
+								DeposedKey: "key",
+							},
+						},
+					},
+					Outputs: map[string]*tfstate.StateOutput{
+						"out": {
+							Sensitive: true,
+							Value:     1,
+						},
+					},
+				},
+			},
+			err: nil,
+		},
+		{
+			name: "Nested module",
+			state: &tfjson.State{
+				FormatVersion: "4",
+				Values: &tfjson.StateValues{
+					RootModule: &tfjson.StateModule{
+						Address: "root",
+						ChildModules: []*tfjson.StateModule{
+							{
+								Address: "child",
+								Resources: []*tfjson.StateResource{
+									{
+										Address:      "demo_resource_foo.test",
+										Mode:         tfjson.ManagedResourceMode,
+										Type:         "demo_resource_foo",
+										Name:         "test",
+										Index:        1,
+										ProviderName: "registry.terraform.io/magodo/demo",
+										AttributeValues: map[string]interface{}{
+											"attr_str": "some string",
+										},
+										SensitiveValues: json.RawMessage{
+											1,
+											2,
+											3,
+										},
+										DependsOn: []string{
+											"dep",
+										},
+										Tainted:    true,
+										DeposedKey: "key",
+									},
+								},
+							},
+						},
+					},
+					Outputs: map[string]*tfjson.StateOutput{
+						"out": {
+							Sensitive: true,
+							Value:     1,
+						},
+					},
+				},
+			},
+			schemas: &tfjson.ProviderSchemas{
+				Schemas: map[string]*tfjson.ProviderSchema{
+					"registry.terraform.io/magodo/demo": {
+						ResourceSchemas: map[string]*tfjson.Schema{
+							"demo_resource_foo": {
+								Block: &tfjson.SchemaBlock{
+									Attributes: map[string]*tfjson.SchemaAttribute{
+										"attr_str": {
+											AttributeType: cty.String,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expect: &tfstate.State{
+				TerraformVersion: "4",
+				Values: &tfstate.StateValues{
+					RootModule: &tfstate.StateModule{
+						Address: "root",
+						ChildModules: []*tfstate.StateModule{
+							{
+								Address: "child",
+								Resources: []*tfstate.StateResource{
+									{
+										Address:      "demo_resource_foo.test",
+										Mode:         tfjson.ManagedResourceMode,
+										Type:         "demo_resource_foo",
+										Name:         "test",
+										Index:        1,
+										ProviderName: "registry.terraform.io/magodo/demo",
+										Value: cty.ObjectVal(map[string]cty.Value{
+											"attr_str": cty.StringVal("some string"),
+										}),
+										SensitiveValues: json.RawMessage{
+											1,
+											2,
+											3,
+										},
+										DependsOn: []string{
+											"dep",
+										},
+										Tainted:    true,
+										DeposedKey: "key",
+									},
+								},
+							},
+						},
+					},
+					Outputs: map[string]*tfstate.StateOutput{
+						"out": {
+							Sensitive: true,
+							Value:     1,
+						},
+					},
+				},
+			},
+			err: nil,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			actual, err := tfstate.FromJSONState(c.state, c.schemas)
+			if c.err != nil {
+				require.Errorf(t, err, c.err.Error())
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, c.expect, actual)
+		})
+	}
 }

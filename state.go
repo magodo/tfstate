@@ -10,6 +10,8 @@ import (
 	ctyjson "github.com/zclconf/go-cty/cty/json"
 )
 
+const stateVersionSupported = "4"
+
 type State struct {
 	TerraformVersion string
 	Values           *StateValues
@@ -50,8 +52,8 @@ func FromJSONState(rawState *tfjson.State, schemas *tfjson.ProviderSchemas) (*St
 	if rawState == nil {
 		return nil, nil
 	}
-	if schemas == nil {
-		return nil, fmt.Errorf("provider schemas cannot be nil")
+	if rawState.FormatVersion != stateVersionSupported {
+		return nil, fmt.Errorf("tfstate only supports state version %s. got=%s", stateVersionSupported, rawState.FormatVersion)
 	}
 	state := &State{
 		TerraformVersion: rawState.FormatVersion,
@@ -59,15 +61,18 @@ func FromJSONState(rawState *tfjson.State, schemas *tfjson.ProviderSchemas) (*St
 	if rawState.Values == nil {
 		return state, nil
 	}
-	rootModule, err := FromJSONStateModule(rawState.Values.RootModule, schemas)
-	if err != nil {
-		return nil, err
+	state.Values = &StateValues{}
+	if rawState.Values.RootModule != nil {
+		rootModule, err := FromJSONStateModule(rawState.Values.RootModule, schemas)
+		if err != nil {
+			return nil, err
+		}
+		state.Values = &StateValues{
+			RootModule: rootModule,
+		}
 	}
-	state.Values = &StateValues{
-		RootModule: rootModule,
-	}
-	if size := len(rawState.Values.Outputs); size > 0 {
-		m := make(map[string]*StateOutput, size)
+	if rawState.Values.Outputs != nil {
+		m := make(map[string]*StateOutput, len(rawState.Values.Outputs))
 		for name, output := range rawState.Values.Outputs {
 			m[name] = FromJSONStateOutput(output)
 		}
@@ -118,6 +123,9 @@ func FromJSONStateOutput(output *tfjson.StateOutput) *StateOutput {
 }
 
 func FromJSONStateResource(resource *tfjson.StateResource, schemas *tfjson.ProviderSchemas) (*StateResource, error) {
+	if schemas == nil {
+		return nil, fmt.Errorf("provider schemas is nil")
+	}
 	if schemas.Schemas == nil {
 		return nil, fmt.Errorf("provider schemas' Schemas is nil")
 	}
