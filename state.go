@@ -3,9 +3,9 @@ package tfstate
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/magodo/tfstate/terraform/jsonschema"
 
 	tfjson "github.com/hashicorp/terraform-json"
-	"github.com/magodo/tfstate/internal/terraform/jsonschema"
 	"github.com/zclconf/go-cty/cty"
 	ctyjson "github.com/zclconf/go-cty/cty/json"
 )
