@@ -2,7 +2,6 @@ package tfstate_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"math/big"
 	"testing"
 
@@ -210,46 +209,28 @@ func TestFromJSONState(t *testing.T) {
 		err     error
 	}{
 		{
-			name: "Unsupported state version",
-			state: &tfjson.State{
-				FormatVersion: "3",
-				Values: &tfjson.StateValues{
-					RootModule: &tfjson.StateModule{},
-				},
-			},
-			err: fmt.Errorf("tfstate only supports state version 4. got=3"),
-		},
-		{
-			name: "No values",
-			state: &tfjson.State{
-				FormatVersion: "4",
-			},
-			expect: &tfstate.State{
-				TerraformVersion: "4",
-			},
+			name:   "No values",
+			state:  &tfjson.State{},
+			expect: &tfstate.State{},
 		},
 		{
 			name: "Empty values",
 			state: &tfjson.State{
-				FormatVersion: "4",
-				Values:        &tfjson.StateValues{},
+				Values: &tfjson.StateValues{},
 			},
 			expect: &tfstate.State{
-				TerraformVersion: "4",
-				Values:           &tfstate.StateValues{},
+				Values: &tfstate.StateValues{},
 			},
 		},
 		{
 			name: "Empty root module & output",
 			state: &tfjson.State{
-				FormatVersion: "4",
 				Values: &tfjson.StateValues{
 					RootModule: &tfjson.StateModule{},
 					Outputs:    map[string]*tfjson.StateOutput{},
 				},
 			},
 			expect: &tfstate.State{
-				TerraformVersion: "4",
 				Values: &tfstate.StateValues{
 					RootModule: &tfstate.StateModule{},
 					Outputs:    map[string]*tfstate.StateOutput{},
@@ -259,7 +240,6 @@ func TestFromJSONState(t *testing.T) {
 		{
 			name: "One resource with outputs",
 			state: &tfjson.State{
-				FormatVersion: "4",
 				Values: &tfjson.StateValues{
 					RootModule: &tfjson.StateModule{
 						Address: "root",
@@ -314,7 +294,6 @@ func TestFromJSONState(t *testing.T) {
 				},
 			},
 			expect: &tfstate.State{
-				TerraformVersion: "4",
 				Values: &tfstate.StateValues{
 					RootModule: &tfstate.StateModule{
 						Address: "root",
@@ -355,7 +334,6 @@ func TestFromJSONState(t *testing.T) {
 		{
 			name: "Nested module",
 			state: &tfjson.State{
-				FormatVersion: "4",
 				Values: &tfjson.StateValues{
 					RootModule: &tfjson.StateModule{
 						Address: "root",
@@ -414,7 +392,6 @@ func TestFromJSONState(t *testing.T) {
 				},
 			},
 			expect: &tfstate.State{
-				TerraformVersion: "4",
 				Values: &tfstate.StateValues{
 					RootModule: &tfstate.StateModule{
 						Address: "root",

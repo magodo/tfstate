@@ -3,14 +3,13 @@ package tfstate
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/magodo/tfstate/terraform/jsonschema"
 
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/zclconf/go-cty/cty"
 	ctyjson "github.com/zclconf/go-cty/cty/json"
 )
-
-const stateVersionSupported = "4"
 
 type State struct {
 	TerraformVersion string
@@ -51,9 +50,6 @@ type StateResource struct {
 func FromJSONState(rawState *tfjson.State, schemas *tfjson.ProviderSchemas) (*State, error) {
 	if rawState == nil {
 		return nil, nil
-	}
-	if rawState.FormatVersion != stateVersionSupported {
-		return nil, fmt.Errorf("tfstate only supports state version %s. got=%s", stateVersionSupported, rawState.FormatVersion)
 	}
 	state := &State{
 		TerraformVersion: rawState.FormatVersion,
