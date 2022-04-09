@@ -332,6 +332,68 @@ func TestFromJSONState(t *testing.T) {
 			err: nil,
 		},
 		{
+			name: "One data source",
+			state: &tfjson.State{
+				Values: &tfjson.StateValues{
+					RootModule: &tfjson.StateModule{
+						Address: "root",
+						Resources: []*tfjson.StateResource{
+							{
+								Address:      "data.demo_resource_foo.test",
+								Mode:         tfjson.DataResourceMode,
+								Type:         "demo_resource_foo",
+								Name:         "test",
+								Index:        1,
+								ProviderName: "registry.terraform.io/magodo/demo",
+								AttributeValues: map[string]interface{}{
+									"attr_str": "some string",
+								},
+							},
+						},
+						ChildModules: []*tfjson.StateModule{},
+					},
+				},
+			},
+			schemas: &tfjson.ProviderSchemas{
+				Schemas: map[string]*tfjson.ProviderSchema{
+					"registry.terraform.io/magodo/demo": {
+						DataSourceSchemas: map[string]*tfjson.Schema{
+							"demo_resource_foo": {
+								Block: &tfjson.SchemaBlock{
+									Attributes: map[string]*tfjson.SchemaAttribute{
+										"attr_str": {
+											AttributeType: cty.String,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expect: &tfstate.State{
+				Values: &tfstate.StateValues{
+					RootModule: &tfstate.StateModule{
+						Address: "root",
+						Resources: []*tfstate.StateResource{
+							{
+								Address:      "data.demo_resource_foo.test",
+								Mode:         tfjson.DataResourceMode,
+								Type:         "demo_resource_foo",
+								Name:         "test",
+								Index:        1,
+								ProviderName: "registry.terraform.io/magodo/demo",
+								Value: cty.ObjectVal(map[string]cty.Value{
+									"attr_str": cty.StringVal("some string"),
+								}),
+							},
+						},
+					},
+				},
+			},
+			err: nil,
+		},
+		{
 			name: "Nested module",
 			state: &tfjson.State{
 				Values: &tfjson.StateValues{

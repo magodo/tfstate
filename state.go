@@ -119,6 +119,9 @@ func FromJSONStateOutput(output *tfjson.StateOutput) *StateOutput {
 }
 
 func FromJSONStateResource(resource *tfjson.StateResource, schemas *tfjson.ProviderSchemas) (*StateResource, error) {
+	if resource == nil {
+		return nil, nil
+	}
 	if schemas == nil {
 		return nil, fmt.Errorf("provider schemas is nil")
 	}
@@ -129,12 +132,19 @@ func FromJSONStateResource(resource *tfjson.StateResource, schemas *tfjson.Provi
 	if !ok {
 		return nil, fmt.Errorf("No provider type %q found in the provider schemas", resource.ProviderName)
 	}
-	resourceSchema, ok := providerSchema.ResourceSchemas[resource.Type]
+	var (
+		schema *tfjson.Schema
+	)
+	switch resource.Mode {
+	case tfjson.DataResourceMode:
+		schema, ok = providerSchema.DataSourceSchemas[resource.Type]
+	case tfjson.ManagedResourceMode:
+		schema, ok = providerSchema.ResourceSchemas[resource.Type]
+	default:
+		return nil, fmt.Errorf("Unknown resource mode %q for resource %q", resource.Mode, resource.Address)
+	}
 	if !ok {
 		return nil, fmt.Errorf("No resource type %q found in the provider schema", resource.Type)
-	}
-	if resource == nil {
-		return nil, nil
 	}
 	ret := &StateResource{
 		Address:         resource.Address,
@@ -153,7 +163,7 @@ func FromJSONStateResource(resource *tfjson.StateResource, schemas *tfjson.Provi
 	if err != nil {
 		return nil, fmt.Errorf("marshal %q: %v", resource.AttributeValues, err)
 	}
-	val, err := ctyjson.Unmarshal(attrsJSON, jsonschema.SchemaBlockImpliedType(resourceSchema.Block))
+	val, err := ctyjson.Unmarshal(attrsJSON, jsonschema.SchemaBlockImpliedType(schema.Block))
 	if err != nil {
 		return nil, fmt.Errorf("cty json unmarshal %q: %v", attrsJSON, err)
 	}
