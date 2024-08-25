@@ -22,23 +22,41 @@ func TestFromJSONStateResource(t *testing.T) {
 		ProviderName: "registry.terraform.io/magodo/demo",
 		AttributeValues: map[string]interface{}{
 			"attr_str":    "some string",
-			"attr_int":    -1,
-			"attr_uint":   1,
-			"attr_float":  0.1,
-			"attr_number": 0.5,
+			"attr_int":    float64(-1),
+			"attr_uint":   float64(1),
+			"attr_float":  float64(0.1),
+			"attr_number": float64(0.5),
 			"attr_bool":   true,
-			"attr_list":   []int{1, 2, 3},
-			"attr_set":    []int{1, 2, 3},
+			"attr_list": []interface{}{
+				float64(1),
+				float64(2),
+				float64(3),
+			},
+			"attr_set": []interface{}{
+				float64(1),
+				float64(2),
+				float64(3),
+			},
 			"attr_map": map[string]interface{}{
 				"key": "value",
 			},
 			"attr_tuple": []interface{}{
-				1,
+				float64(1),
 				map[string]interface{}{"foo": "bar"},
-				[]int{1, 2, 3},
+				[]interface{}{
+					float64(1),
+					float64(2),
+					float64(3),
+				},
 			},
 			"object": map[string]interface{}{
-				"field": 1,
+				"field": float64(1),
+				"nest": map[string]interface{}{
+					"field": "a",
+				},
+			},
+			"dynamic": map[string]interface{}{
+				"field": float64(1),
 				"nest": map[string]interface{}{
 					"field": "a",
 				},
@@ -98,6 +116,9 @@ func TestFromJSONStateResource(t *testing.T) {
 										}),
 									}),
 								},
+								"dynamic": {
+									AttributeType: cty.DynamicPseudoType,
+								},
 							},
 						},
 					},
@@ -134,17 +155,18 @@ func TestFromJSONStateResource(t *testing.T) {
 		Nest  NestObjectType `cty:"nest"`
 	}
 	type ValueGoType struct {
-		AttrStr    string            `cty:"attr_str"`
-		AttrInt    int               `cty:"attr_int"`
-		AttrUint   uint              `cty:"attr_uint"`
-		AttrFloat  float64           `cty:"attr_float"`
-		AttrNumber big.Float         `cty:"attr_number"`
-		AttrBool   bool              `cty:"attr_bool"`
-		AttrList   []int             `cty:"attr_list"`
-		AttrSet    []int             `cty:"attr_set"`
-		AttrMap    map[string]string `cty:"attr_map"`
-		AttrTuple  TupleType         `cty:"attr_tuple"`
-		AttrObject ObjectType        `cty:"object"`
+		AttrStr     string            `cty:"attr_str"`
+		AttrInt     int               `cty:"attr_int"`
+		AttrUint    uint              `cty:"attr_uint"`
+		AttrFloat   float64           `cty:"attr_float"`
+		AttrNumber  big.Float         `cty:"attr_number"`
+		AttrBool    bool              `cty:"attr_bool"`
+		AttrList    []int             `cty:"attr_list"`
+		AttrSet     []int             `cty:"attr_set"`
+		AttrMap     map[string]string `cty:"attr_map"`
+		AttrTuple   TupleType         `cty:"attr_tuple"`
+		AttrObject  ObjectType        `cty:"object"`
+		AttrDynamic ObjectType        `cty:"dynamic"`
 	}
 
 	expectResourceValue := ValueGoType{
@@ -163,6 +185,12 @@ func TestFromJSONStateResource(t *testing.T) {
 			List: []int{1, 2, 3},
 		},
 		AttrObject: ObjectType{
+			Field: 1,
+			Nest: NestObjectType{
+				Field: "a",
+			},
+		},
+		AttrDynamic: ObjectType{
 			Field: 1,
 			Nest: NestObjectType{
 				Field: "a",
@@ -198,6 +226,7 @@ func TestFromJSONStateResource(t *testing.T) {
 	require.Equal(t, ev.AttrMap, av.AttrMap)
 	require.Equal(t, ev.AttrTuple, av.AttrTuple)
 	require.Equal(t, ev.AttrObject, av.AttrObject)
+	require.Equal(t, ev.AttrDynamic, av.AttrDynamic)
 }
 
 func TestFromJSONState(t *testing.T) {
