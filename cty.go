@@ -74,6 +74,12 @@ func unmarshalPrimitive(v interface{}, t cty.Type, path cty.Path) (cty.Value, er
 		}
 	case cty.Number:
 		switch v := v.(type) {
+		case json.Number:
+			val, err := cty.ParseNumberVal(v.String())
+			if err != nil {
+				return cty.NilVal, path.NewError(err)
+			}
+			return val, nil
 		case string:
 			val, err := cty.ParseNumberVal(v)
 			if err != nil {
@@ -83,7 +89,7 @@ func unmarshalPrimitive(v interface{}, t cty.Type, path cty.Path) (cty.Value, er
 		case float64:
 			return cty.NumberFloatVal(v), nil
 		default:
-			return cty.NilVal, path.NewErrorf("number is required")
+			return cty.NilVal, path.NewErrorf("number is required, got %T", v)
 		}
 	case cty.String:
 		switch v := v.(type) {
