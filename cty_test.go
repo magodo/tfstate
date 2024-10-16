@@ -1,6 +1,7 @@
 package tfstate
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -17,9 +18,10 @@ func TestUnmarshalToCty(t *testing.T) {
 		{
 			name: "basic",
 			obj: map[string]interface{}{
-				"bool":   true,
-				"string": "abc",
-				"number": float64(123),
+				"bool":        true,
+				"string":      "abc",
+				"number":      float64(123),
+				"json_number": json.Number("123"),
 				"list": []interface{}{
 					float64(1),
 					float64(2),
@@ -56,9 +58,10 @@ func TestUnmarshalToCty(t *testing.T) {
 						"name": "a",
 					},
 				},
-				"dynamic_bool":   true,
-				"dynamic_number": float64(123),
-				"dynamic_string": "abc",
+				"dynamic_bool":        true,
+				"dynamic_number":      float64(123),
+				"dynamic_json_number": json.Number("123"),
+				"dynamic_string":      "abc",
 				"dynamic_tuple": []interface{}{
 					float64(1),
 					float64(2),
@@ -69,26 +72,29 @@ func TestUnmarshalToCty(t *testing.T) {
 				},
 			},
 			typ: cty.Object(map[string]cty.Type{
-				"bool":           cty.Bool,
-				"string":         cty.String,
-				"number":         cty.Number,
-				"list":           cty.List(cty.Number),
-				"set":            cty.Set(cty.Number),
-				"tuple":          cty.Tuple([]cty.Type{cty.Bool, cty.Number, cty.String}),
-				"object":         cty.Object(map[string]cty.Type{"bool": cty.Bool}),
-				"nested_list":    cty.List(cty.Object(map[string]cty.Type{"name": cty.String})),
-				"nested_set":     cty.Set(cty.Object(map[string]cty.Type{"name": cty.String})),
-				"nested_tuple":   cty.Tuple([]cty.Type{cty.String, cty.Object(map[string]cty.Type{"name": cty.String})}),
-				"dynamic_bool":   cty.DynamicPseudoType,
-				"dynamic_number": cty.DynamicPseudoType,
-				"dynamic_string": cty.DynamicPseudoType,
-				"dynamic_tuple":  cty.DynamicPseudoType,
-				"dynamic_object": cty.DynamicPseudoType,
+				"bool":                cty.Bool,
+				"string":              cty.String,
+				"number":              cty.Number,
+				"json_number":         cty.Number,
+				"list":                cty.List(cty.Number),
+				"set":                 cty.Set(cty.Number),
+				"tuple":               cty.Tuple([]cty.Type{cty.Bool, cty.Number, cty.String}),
+				"object":              cty.Object(map[string]cty.Type{"bool": cty.Bool}),
+				"nested_list":         cty.List(cty.Object(map[string]cty.Type{"name": cty.String})),
+				"nested_set":          cty.Set(cty.Object(map[string]cty.Type{"name": cty.String})),
+				"nested_tuple":        cty.Tuple([]cty.Type{cty.String, cty.Object(map[string]cty.Type{"name": cty.String})}),
+				"dynamic_bool":        cty.DynamicPseudoType,
+				"dynamic_number":      cty.DynamicPseudoType,
+				"dynamic_json_number": cty.DynamicPseudoType,
+				"dynamic_string":      cty.DynamicPseudoType,
+				"dynamic_tuple":       cty.DynamicPseudoType,
+				"dynamic_object":      cty.DynamicPseudoType,
 			}),
 			expect: cty.ObjectVal(map[string]cty.Value{
-				"bool":   cty.BoolVal(true),
-				"string": cty.StringVal("abc"),
-				"number": cty.NumberFloatVal(123),
+				"bool":        cty.BoolVal(true),
+				"string":      cty.StringVal("abc"),
+				"number":      cty.NumberFloatVal(123),
+				"json_number": cty.MustParseNumberVal("123"),
 				"list": cty.ListVal([]cty.Value{
 					cty.NumberFloatVal(1),
 					cty.NumberFloatVal(2),
@@ -117,9 +123,10 @@ func TestUnmarshalToCty(t *testing.T) {
 					cty.StringVal("a"),
 					cty.ObjectVal(map[string]cty.Value{"name": cty.StringVal("a")}),
 				}),
-				"dynamic_bool":   cty.BoolVal(true),
-				"dynamic_number": cty.NumberFloatVal(123),
-				"dynamic_string": cty.StringVal("abc"),
+				"dynamic_bool":        cty.BoolVal(true),
+				"dynamic_number":      cty.NumberFloatVal(123),
+				"dynamic_json_number": cty.MustParseNumberVal("123"),
+				"dynamic_string":      cty.StringVal("abc"),
 				"dynamic_tuple": cty.TupleVal([]cty.Value{
 					cty.NumberFloatVal(1),
 					cty.NumberFloatVal(2),
